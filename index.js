@@ -8,22 +8,29 @@ require('dotenv').config()
 app.use(cors())
 app.use(express.json())
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://montage-car:${process.env.PASS}@cluster0.lv5px.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 async function run() {
     await client.connect()
-    console.log('connected')
     const partsCollection = client.db('montage-car').collection('parts')
-
-    app.get('/test', async(req, res) => {
+    app.get('/parts', async (req, res) => {
         const query = {}
         const parts = await partsCollection.find(query).toArray()
         res.send(parts)
     })
+
+    app.get('/parts/:id', async (req, res) => {
+        const id = req.params.id
+        const query = { _id: ObjectId(id) }
+        const part = await partsCollection.findOne(query)
+        res.send(part)
+    })
 }
 run().catch(console.dir)
+
+
 
 
 
