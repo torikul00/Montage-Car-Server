@@ -33,6 +33,7 @@ async function run() {
     const partsCollection = client.db('montage-car').collection('parts')
     const orderCollection = client.db('montage-car').collection('order')
     const   reviewCollection = client.db('montage-car').collection('reviews')
+    const   paymentCollection = client.db('montage-car').collection('payment')
     app.get('/parts', async (req, res) => {
         const query = {}
         const parts = await partsCollection.find(query).toArray()
@@ -76,6 +77,23 @@ async function run() {
           });
           res.send({clientSecret: paymentIntent.client_secret})
         
+    })
+
+    app.patch('/update/:id', async (req, res) => {
+        const id = req.params.id
+        const paymentInfo = req.body
+        const query = {_id:ObjectId(id)}
+        const updateDoc = {
+            $set: {
+                transactionId :paymentInfo.transactionId,
+                paid: true
+                
+            }
+        }
+        const updatedData = await orderCollection.updateOne(query, updateDoc)
+        const payment = await paymentCollection.insertOne(paymentInfo)
+        res.send(updatedData)
+
     })
 
 
