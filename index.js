@@ -17,7 +17,7 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 const verifyJWT = (req, res, next) => {
     const authHeader = req.headers.authorization;
     if (!authHeader) {
-        return res.status(401).send({ message:'You have no permission to access' });
+        return res.status(401).send({ message: 'You have no permission to access' });
     }
     const token = authHeader.split(' ')[1];
     jwt.verify(token, process.env.SECRET_TOKEN, function (err, decoded) {
@@ -54,8 +54,16 @@ async function run() {
         const result = await orderCollection.insertOne(data)
         res.send(result)
     })
+    // admin checking pai 
+    app.get('/admin/:email', async (req, res) => {
+        const email = req.params.email
+        const query = {email:email}
+        const user = await userCollection.findOne(query)
+      
+        const isAdmin = user.role === 'admin'
+        res.send({admin : isAdmin})
+    })
 
-  
     // user api
     app.put('/user/:email', async (req, res) => {
         const user = req.body
@@ -69,53 +77,56 @@ async function run() {
         const token = jwt.sign({ email: email }, process.env.SECRET_TOKEN, { expiresIn: '5d' })
         res.send({ result, token })
     })
-      // admin api 
-      app.put('/user/admin/:email',verifyJWT, async (req, res) => {
+    // admin api 
+    app.put('/user/admin/:email', verifyJWT, async (req, res) => {
         const email = req.params.email
         const filter = { email: email }
-          const initiator = req.decoded.email
- 
-          const initiatorAccount = await userCollection.findOne({ email: initiator })
-        
-          if (initiatorAccount.role == 'admin') {
+        const initiator = req.decoded.email
+        const initiatorAccount = await userCollection.findOne({ email: initiator })
+        if (initiatorAccount.role == 'admin') {
             const updateData = {
                 $set: {
-                    role:'admin'
+                    role: 'admin'
                 },
             }
             const result = await userCollection.updateOne(filter, updateData)
-          return  res.send(result)
-          }
-          else {
-            return  res.status(403).send({message : 'Forbidden '})
-          }
-       
-      })
-    
-    
-    
+            return res.send(result)
+        }
+        else {
+            return res.status(403).send({ message: 'Forbidden ' })
+        }
+
+    })
+    // delete users api 
+    app.delete('/user/:email', async (req, res) => {
+        const email = req.params.email
+        const result = await userCollection.deleteOne({ email: email })
+        res.send(result)
+    })
+
+
     //  get all users 
-    app.get('/users',verifyJWT, async(req,res)=>{
+    app.get('/users', verifyJWT, async (req, res) => {
         const query = {}
         const users = await userCollection.find(query).toArray()
         res.send(users)
-        
+
     })
 
 
     // get all orders api
-    app.get('/order/:email',verifyJWT, async (req, res) => {
+    app.get('/order/:email', verifyJWT, async (req, res) => {
         const email = req.params.email
         const decodedEmail = req.decoded.email
         if (email === decodedEmail) {
-            
+
             const query = { email: email }
             const order = await orderCollection.find(query).toArray()
-          return  res.send(order)
+            return res.send(order)
         }
         else {
             return res.status(403).send({ message: 'Forbidden access' })
-    }
+        }
     })
 
     app.get('/singleItem/:id', async (req, res) => {
@@ -155,7 +166,7 @@ async function run() {
             }
         }
         const updatedData = await orderCollection.updateOne(query, updateDoc)
-        const payment = await paymentCollection.insertOne(paymentInfo)
+        const payment = await paymentCollection.insertOne(paymentData)
         res.send(updatedData)
 
     })
@@ -178,10 +189,6 @@ async function run() {
 
 }
 run().catch(console.dir)
-
-
-
-
 
 
 
