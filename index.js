@@ -54,6 +54,8 @@ async function run() {
         const result = await orderCollection.insertOne(data)
         res.send(result)
     })
+
+  
     // user api
     app.put('/user/:email', async (req, res) => {
         const user = req.body
@@ -67,16 +69,53 @@ async function run() {
         const token = jwt.sign({ email: email }, process.env.SECRET_TOKEN, { expiresIn: '5d' })
         res.send({ result, token })
     })
-
-
+      // admin api 
+      app.put('/user/admin/:email',verifyJWT, async (req, res) => {
+        const email = req.params.email
+        const filter = { email: email }
+          const initiator = req.decoded.email
+ 
+          const initiatorAccount = await userCollection.findOne({ email: initiator })
+        
+          if (initiatorAccount.role == 'admin') {
+            const updateData = {
+                $set: {
+                    role:'admin'
+                },
+            }
+            const result = await userCollection.updateOne(filter, updateData)
+          return  res.send(result)
+          }
+          else {
+            return  res.status(403).send({message : 'Forbidden '})
+          }
+       
+      })
+    
+    
+    
+    //  get all users 
+    app.get('/users',verifyJWT, async(req,res)=>{
+        const query = {}
+        const users = await userCollection.find(query).toArray()
+        res.send(users)
+        
+    })
 
 
     // get all orders api
     app.get('/order/:email',verifyJWT, async (req, res) => {
         const email = req.params.email
-        const query = { email: email }
-        const order = await orderCollection.find(query).toArray()
-        res.send(order)
+        const decodedEmail = req.decoded.email
+        if (email === decodedEmail) {
+            
+            const query = { email: email }
+            const order = await orderCollection.find(query).toArray()
+          return  res.send(order)
+        }
+        else {
+            return res.status(403).send({ message: 'Forbidden access' })
+    }
     })
 
     app.get('/singleItem/:id', async (req, res) => {
