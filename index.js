@@ -113,7 +113,13 @@ async function run() {
 
     })
 
-
+    // order delete api 
+    app.delete('/order/:id', async (req, res) => {
+        const id = req.params.id
+        const query = {_id:ObjectId(id)}
+        const result = await orderCollection.deleteOne(query)
+        res.send(result)
+    })
     // get all orders api
     app.get('/order/:email', verifyJWT, async (req, res) => {
         const email = req.params.email
@@ -153,16 +159,11 @@ async function run() {
     app.patch('/update/:id', async (req, res) => {
         const id = req.params.id
         const paymentData = req.body
-
         const query = { _id: ObjectId(id) }
-
-        console.log(paymentData.transactionId)
-
         const updateDoc = {
             $set: {
                 transactionId: paymentData.transactionId,
                 paid: true
-
             }
         }
         const updatedData = await orderCollection.updateOne(query, updateDoc)
