@@ -36,25 +36,37 @@ async function run() {
     const reviewCollection = client.db('montage-car').collection('reviews')
     const paymentCollection = client.db('montage-car').collection('payment')
     const userCollection = client.db('montage-car').collection('users')
-    app.get('/parts', async (req, res) => {
+
+    // get all products api
+    app.get('/parts',verifyJWT ,async(req, res) => {
         const query = {}
         const parts = await partsCollection.find(query).toArray()
         res.send(parts)
     })
 
-    app.get('/parts/:id', async (req, res) => {
+    // get single product api
+    app.get('/parts/:id',verifyJWT, async (req, res) => {
         const id = req.params.id
         const query = { _id: ObjectId(id) }
         const part = await partsCollection.findOne(query)
         res.send(part)
     })
+
+    // create api for add new product
+    app.post('/product', async (req, res) => {
+        const product = req.body
+        const result = await partsCollection.insertOne(product)
+        res.send(result)
+    })
+
+    // post order
     app.post('/part', async (req, res) => {
 
         const data = req.body
         const result = await orderCollection.insertOne(data)
         res.send(result)
     })
-    // admin checking pai 
+    // admin checking api
     app.get('/admin/:email', async (req, res) => {
         const email = req.params.email
         const query = {email:email}
@@ -120,7 +132,7 @@ async function run() {
         const result = await orderCollection.deleteOne(query)
         res.send(result)
     })
-    // get all orders api
+    // get all orders api bu speacific user
     app.get('/order/:email', verifyJWT, async (req, res) => {
         const email = req.params.email
         const decodedEmail = req.decoded.email
@@ -134,19 +146,22 @@ async function run() {
             return res.status(403).send({ message: 'Forbidden access' })
         }
     })
-
-    app.get('/singleItem/:id', async (req, res) => {
+    // get all orders for manage 
+    app.get('/allOrders',verifyJWT, async (req, res) => {
+        const orders = await orderCollection.find().toArray()
+        res.send(orders)
+    })
+    
+    app.get('/singleItem/:id',verifyJWT, async(req, res) => {
         const id = req.params.id
         const query = { _id: ObjectId(id) }
         const result = await orderCollection.findOne(query)
         res.send(result)
     })
-
+    // payment api for stripe
     app.post('/create-payment-intent', async (req, res) => {
-
         const price = req.body.productPrice
         const total = price * 100
-
         const paymentIntent = await stripe.paymentIntents.create({
             amount: total,
             currency: 'usd',
@@ -180,7 +195,7 @@ async function run() {
         res.send(result)
     })
 
-    app.get('/review', async (req, res) => {
+    app.get('/review',verifyJWT, async(req, res) => {
         const query = {}
         const reviews = await reviewCollection.find(query).toArray()
         res.send(reviews)
