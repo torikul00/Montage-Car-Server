@@ -52,6 +52,16 @@ async function run() {
         res.send(part)
     })
 
+
+    // Delete single product api
+    app.delete('/parts/:id', async (req, res) => {
+        const id = req.params.id
+        const query = { _id: ObjectId(id) }
+        const result = await partsCollection.deleteOne(query)
+        res.send(result)
+    })
+
+
     // create api for add new product
     app.post('/product', async (req, res) => {
         const product = req.body
