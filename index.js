@@ -38,7 +38,7 @@ async function run() {
     const userCollection = client.db('montage-car').collection('users')
 
     // get all products api
-    app.get('/parts',verifyJWT ,async(req, res) => {
+    app.get('/parts' ,async(req, res) => {
         const query = {}
         const parts = await partsCollection.find(query).toArray()
         res.send(parts)
@@ -75,8 +75,30 @@ async function run() {
         const isAdmin = user.role === 'admin'
         res.send({admin : isAdmin})
     })
+    
 
-    // user api
+    // user update api 
+    app.patch('/userUpdate/:email', async (req, res) => {
+        const user = req.body
+        const email = req.params.email
+        const filter = { email: email }
+      
+        const updateData = {
+            $set: user,
+        }
+        const result = await userCollection.updateOne(filter, updateData)
+        res.send( result)
+    })
+
+    // get single user api 
+    app.get('/user/:email', async(req, res) => {
+        const email = req.params.email
+        const user = await userCollection.findOne({email:email})
+        res.send(user)
+    })
+
+
+    // user api when user login or signUp
     app.put('/user/:email', async (req, res) => {
         const user = req.body
         const email = req.params.email
@@ -89,6 +111,7 @@ async function run() {
         const token = jwt.sign({ email: email }, process.env.SECRET_TOKEN, { expiresIn: '5d' })
         res.send({ result, token })
     })
+
     // admin api 
     app.put('/user/admin/:email', verifyJWT, async (req, res) => {
         const email = req.params.email
@@ -195,7 +218,7 @@ async function run() {
         res.send(result)
     })
 
-    app.get('/review',verifyJWT, async(req, res) => {
+    app.get('/review', async(req, res) => {
         const query = {}
         const reviews = await reviewCollection.find(query).toArray()
         res.send(reviews)
